@@ -13,7 +13,9 @@ set(NANOPB_RUNTIME_SOURCES
     nanopb/pb_encode.c
 )
 
-file(GLOB GENERATED_SOURCES generated/meshtastic/*.pb.c)
+# *.pb.cpp: deviceonly uses std::vector callback datatypes (upstream choice),
+# so it is generated as a C++ source; its header is C++-only as well.
+file(GLOB GENERATED_SOURCES generated/meshtastic/*.pb.c generated/meshtastic/*.pb.cpp)
 
 if (DEFINED ENV{ESP_IDF_VERSION})
     idf_component_register(

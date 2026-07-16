@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Generate nanopb C sources for the embedded (Tactility) build.
 #
-# Scope: the transitive import closure of mesh.proto — the RX-path minimum
-# (MeshPacket, Data, User, Position, Telemetry) plus the files they import.
+# Scope: the RX path (MeshPacket, Data, User, Position, Telemetry) plus the
+# client/config API surface (AdminMessage, ChannelSet, LocalConfig, ChannelFile,
+# DeviceState, canned messages) and their transitive imports.
 # Per-message sizing/callback options come from the meshtastic/*.options
 # files maintained upstream.
 #
@@ -39,6 +40,14 @@ PROTOS=(
     meshtastic/portnums.proto
     meshtastic/telemetry.proto
     meshtastic/xmodem.proto
+    meshtastic/admin.proto
+    meshtastic/apponly.proto
+    meshtastic/cannedmessages.proto
+    meshtastic/clientonly.proto
+    meshtastic/connection_status.proto
+    meshtastic/deviceonly.proto
+    meshtastic/localonly.proto
+    meshtastic/mqtt.proto
 )
 
 "$PYTHON" nanopb/generator/nanopb_generator.py \
@@ -47,4 +56,9 @@ PROTOS=(
     -D "$OUT" \
     "${PROTOS[@]}"
 
-echo "Generated $(ls "$OUT"/meshtastic/*.pb.c | wc -l) .pb.c files into $OUT/meshtastic/"
+# deviceonly.proto declares std::vector callback datatypes upstream, making its
+# generated code C++-only. Rename to .pb.cpp so build systems compile it as C++.
+# Its header must likewise only be included from C++ translation units.
+mv "$OUT/meshtastic/deviceonly.pb.c" "$OUT/meshtastic/deviceonly.pb.cpp"
+
+echo "Generated $(ls "$OUT"/meshtastic/*.pb.c* | wc -l) .pb.c/.pb.cpp files into $OUT/meshtastic/"
